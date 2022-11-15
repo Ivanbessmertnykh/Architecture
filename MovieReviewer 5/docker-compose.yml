@@ -1,0 +1,25 @@
+# Этот файл позволяет запустить БД в докере
+version: "3"
+services:
+  database:
+    image: postgres:latest # т.к. работаем с постгрес, то качаем постгрес
+    container_name: movie-reviewDB # так будет называться контейнер с БД
+    volumes:
+      - postgres-data:/var/lib/postgresql/data # По данному пути внутри контейнера будут храниться данные в БД (в приложении докера в volumes)
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/1-schema.sql:ro # При первом запуске будет выполняться запрос для создания БД
+      - ./database/data.sql:/docker-entrypoint-initdb.d/2-data.sql:ro # При первом запуске будет выполняться запрос для заполнения БД тестовыми данными
+    ports:
+      - 5432:5432 #работает на 5432 порту. Если вдруг 5432 порт занят (такое бывает, если установлен PostgreSQL на компе), то первую 5432 поменять на 5435. Тогда БД будет работать на 5435 порту (не забыть поменять в application.yml порт, по дефолту там 5432)
+    environment:
+      - POSTGRES_USER=postgres # имя пользователя
+      - POSTGRES_PASSWORD=postgres # пароль
+      - POSTGRES_DB=reviewdb # имя БД
+
+volumes:
+  postgres-data:
+
+# Если вдруг захотелось глянуть содержимое БД, то можно выполнить следующую команду двумя способами:
+# 1) Можно зайти прямо в приложение docker. Кликнув по нашему контейнеру, переходим в спешл окно (либо нажав 3 точки).
+# Выбираем терминал и вводим следующую команду: psql -U postgres reviewdb
+# 2) Или прямо из терминала (необходимо быть в папке проекта!):
+# docker exec -it movie-reviewDB psql -U postgres reviewdb

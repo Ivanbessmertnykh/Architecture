@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>Chat</title>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/css/bootstrap.min.css"
+              integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T"
+              crossorigin="anonymous">
+        <script src="https://cdn.jsdelivr.net/webjars/org.webjars/sockjs-client/1.5.1/sockjs.js"></script>
+        <script src="https://cdn.jsdelivr.net/webjars/org.webjars/stomp-websocket/2.3.4/stomp.js"></script>
+        <script type="text/javascript">
+            let stompClient = null;
+
+            function setConnected(connected) {
+                document.getElementById('connect').disabled = connected;
+                document.getElementById('disconnect').disabled = !connected;
+                document.getElementById('conversationDiv').style.visibility
+                    = connected ? 'visible' : 'hidden';
+                document.getElementById('response').innerHTML = '';
+            }
+
+            <!--Вкратце: создаем сокет, который связан с эндпоинтом /chat-->
+            <!--При подключении в лог браузера выводим, что мы подключились и подписываемся на /topic/messages-->
+            <!--На этот адрес нам приходят сообщения от других пользователей, которые будем выводить-->
+            function connect() {
+                let socket = new SockJS('/webs');
+                stompClient = Stomp.over(socket);
+                stompClient.connect({}, function(frame) {
+                    setConnected(true);
+                    console.log('Connected: ' + frame);
+                    stompClient.subscribe('/topic/messages', function(messageOutput) {
+                        showMessageOutput(JSON.parse(messageOutput.body));
+                    });
+                });
+            }
+
+            function disconnect() {
+                if(stompClient != null) {
+                    stompClient.disconnect();
+                }
+                setConnected(false);
+                console.log("Disconnected");
+            }
+
+            <!--Отправляем сообщение, поля которого получаем из элементов-->
+            <!--Отправляем на бэк, на эндпоинт /chat в JSON формате-->
+            function sendMessage() {
+                let from = document.getElementById('from').value;
+                let text = document.getElementById('message').value;
+                stompClient.send("/application/webs", {},
+                    JSON.stringify({'from':from, 'message':text}));
+            }
+
+            <!--Выводим полученное сообщение в красивом виде-->
+            function showMessageOutput(messageOutput) {
+                let response = document.getElementById('response');
+                let p = document.createElement('p');
+                p.style.wordWrap = 'break-word';
+                p.appendChild(document.createTextNode(messageOutput.from + ": "
+                    + messageOutput.message + " (" + messageOutput.time + ")"));
+                response.appendChild(p);
+            }
+        </script>
+    </head>
+    <body onload="disconnect()">
+    <div class="px-4 py-5 my-5 text-center">
+        <h1 class="display-5 fw-bold">Chat</h1>
+        <br/>
+        <div class="col-lg-6 mx-auto">
+            <div>
+                <input type="text" class="form-control" id="from" placeholder="Choose a nickname">
+            </div>
+            <br/>
+            <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
+                <button type="button" class="btn btn-primary btn-lg px-4 gap-3" id="connect" onclick="connect()"
+                        style="margin-right: 10px">
+                    Connect
+                </button>
+                <button type="button" class="btn btn-outline-secondary btn-lg px-4" id="disconnect" disabled="disabled"
+                        onclick="disconnect()">
+                    Disconnect
+                </button>
+            </div>
+        </div>
+        <br/>
+
+        <div class="container col-xl-10 col-xxl-8 px-4 py-5" id="conversationDiv">
+            <div>
+                <textarea type="text" class="form-control" id="message" placeholder="Write a message..."></textarea>
+            </div>
+            <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
+                <button type="button" class="btn btn-primary btn-lg px-4 gap-3" id="sendMessage"
+                        onclick="sendMessage()">
+                    Send
+                </button>
+            </div>
+            <br/>
+            <p class="lead" id="response"></p>
+        </div>
+    </div>
+
+    </body>
+</html>

@@ -1,0 +1,5 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/reviewdb # подключаемся к БД, которое развернуто в докере
+    username: postgres
+    password: postgres
